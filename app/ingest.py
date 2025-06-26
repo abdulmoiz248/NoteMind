@@ -3,7 +3,7 @@ import faiss
 import pickle
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
-from ocr_utils import extractTextFromPDF
+from app.ocr_utils import extractTextFromPDF
 
 CHUNK_SIZE = 300
 CHUNK_OVERLAP = 50

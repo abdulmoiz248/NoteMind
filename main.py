@@ -1,41 +1,47 @@
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.responses import JSONResponse
+from typing import List
 import os
+import shutil
 from app.ingest import ingestDocument
 from app.generate import askNoteMind
 
-def listFiles(folder):
-    files = [f for f in os.listdir(folder) if f.endswith((".pdf", ".txt", ".docx"))]
-    return files
+app = FastAPI(title="NoteMind FastAPI Backend")
 
-def runChat(subject):
-    print(f"\n🧠 Chatting with subject: {subject}")
-    while True:
-        query = input("\n❓ Ask NoteMind (or type 'switch' / 'exit'): ")
-        if query.lower() == "exit":
-            print("👋 Exiting NoteMind...")
-            break
-        elif query.lower() == "switch":
-            return
-        else:
-            response = askNoteMind(query, subject)
-            print("\n💬 NoteMind:", response)
+DATA_DIR = "data"
+EMBEDDINGS_DIR = "embeddings"
+os.makedirs(DATA_DIR, exist_ok=True)
 
-def main():
-    while True:
-        print("\n📚 Existing subjects:", [f.replace("_index.faiss", "") for f in os.listdir("embeddings") if f.endswith(".faiss")])
-        action = input("\nType 'ingest' to add new file or enter subject name to chat: ").strip()
+@app.get("/")
+def root():
+    return {"message": "NoteMind backend is live 🚀"}
 
-        if action.lower() == "ingest":
-            files = listFiles("data")
-            print("\n📄 Files in 'data/':")
-            for idx, f in enumerate(files):
-                print(f"{idx + 1}. {f}")
-            fileIdx = int(input("\nSelect file number to ingest: ")) - 1
-            subject = input("Enter subject name (e.g. math, physics): ").strip().lower()
-            ingestDocument(f"data/{files[fileIdx]}", subject)
-        elif action.lower() == "exit":
-            break
-        else:
-            runChat(action.lower())
+@app.get("/subjects")
+def listSubjects():
+    files = os.listdir(EMBEDDINGS_DIR)
+    subjects = list(set(f.split("_")[0] for f in files if f.endswith(".faiss")))
+    return {"subjects": subjects}
 
-if __name__ == "__main__":
-    main()
+@app.post("/ingest")
+async def ingest(
+    subject: str = Form(...),
+    handwritten: bool = Form(False),
+    file: UploadFile = File(...)
+):
+    filePath = os.path.join(DATA_DIR, file.filename)
+    with open(filePath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        ingestDocument(filePath, subject, handwritten)
+        return {"status": "success", "subject": subject}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/chat")
+def chat(subject: str = Form(...), query: str = Form(...)):
+    try:
+        answer = askNoteMind(query, subject)
+        return {"response": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -3,7 +3,7 @@ import faiss
 import pickle
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
-from app.ocr_utils import extractTextFromPDF
+from app.ocr_utils import extractTextFromDocument
 
 CHUNK_SIZE = 300
 CHUNK_OVERLAP = 50
@@ -21,8 +21,9 @@ def chunkText(text, chunkSize=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
         start = end - overlap
     return chunks
 
-def ingestDocument(filePath: str, subject: str):
-    data = extractTextFromPDF(filePath)
+
+def ingestDocument(filePath: str, subject: str, handwritten=False):
+    data = extractTextFromDocument(filePath, handwritten=handwritten)
     allChunks, metadata = [], []
 
     for pageData in data:
@@ -38,6 +39,11 @@ def ingestDocument(filePath: str, subject: str):
                 "file": os.path.basename(filePath),
                 "chunk": chunk
             })
+        if not allChunks:
+         print("⚠️ No readable text found in the document. Skipping embedding.")
+         return
+
+    
 
     print(f"Embedding {len(allChunks)} chunks...")
     embeddings = model.encode(allChunks, show_progress_bar=True)
@@ -53,4 +59,3 @@ def ingestDocument(filePath: str, subject: str):
 
     print(f"[✓] {subject} ingested successfully.")
 
-ingestDocument("data/sample.docx", subject="math")

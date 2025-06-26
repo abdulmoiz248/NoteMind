@@ -1,0 +1,8 @@
+faiss-cpu
+sentence-transformers
+PyMuPDF
+pytesseract
+pdf2image
+tqdm
+google-generativeai
+Pillow

@@ -300,7 +300,7 @@ export default function FileUpload({ onSubjectAdded }: FileUploadProps) {
               >
                 {uploading ? (
                   <motion.div
-                    animate={{ rotate: 360 }}
+                    
                     transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                     className="flex items-center gap-3"
                   >

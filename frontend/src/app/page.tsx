@@ -1,13 +1,16 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Brain, Sparkles, Zap } from "lucide-react"
+import { Brain,  Zap } from "lucide-react"
 import FileUpload from "@/components/file-upload"
 import ChatInterface from "@/components/chat-interface"
 import SubjectsList from "@/components/subjects-list"
 import axios from "axios"
+import Image from "next/image"
 
 const API_BASE = "http://localhost:5000"
 
@@ -16,7 +19,6 @@ export default function NoteMindApp() {
   const [selectedSubject, setSelectedSubject] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("upload")
-  const [keys,setkeys]=useState(1)
 
   const fetchSubjects = async () => {
     try {
@@ -34,12 +36,30 @@ export default function NoteMindApp() {
 
   useEffect(() => {
     fetchSubjects()
-    setkeys(keys+1)
   }, [])
 
   const handleSubjectAdded = () => {
     fetchSubjects()
   }
+
+  // Component to render tab content with animation
+  const TabContentWithAnimation = ({ value, children }: { value: string; children: React.ReactNode }) => (
+    <TabsContent value={value} className="mt-0">
+      <AnimatePresence mode="wait">
+        {activeTab === value && (
+          <motion.div
+            key={value}
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 100 }}
+            transition={{ duration: 0.5 }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </TabsContent>
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative overflow-hidden">
@@ -63,16 +83,12 @@ export default function NoteMindApp() {
         >
           <div className="flex items-center justify-center gap-4 mb-6">
             <motion.div
-              animate={{ rotate: 360 }}
+             
               transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
               className="relative"
             >
-              <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-2xl">
-                <Brain className="h-8 w-8 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center">
-                <Sparkles className="h-3 w-3 text-amber-900" />
-              </div>
+              <Image src='/logo-2.png' width={100} height={100} alt='logo'/>
+             
             </motion.div>
             <div>
               <h1 className="text-6xl font-black bg-gradient-to-r from-white via-emerald-200 to-cyan-200 bg-clip-text text-transparent">
@@ -134,48 +150,22 @@ export default function NoteMindApp() {
               </TabsTrigger>
             </TabsList>
 
-            <div key={keys} className="mt-8">
-              <AnimatePresence key={keys+10} mode="wait">
-                <TabsContent value="upload" className="mt-0">
-                  <motion.div
-                    key="upload"
-                    initial={{ opacity: 0, x: -100 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 100 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <FileUpload onSubjectAdded={handleSubjectAdded} />
-                  </motion.div>
-                </TabsContent>
+            <div className="mt-8">
+              <TabContentWithAnimation value="upload">
+                <FileUpload onSubjectAdded={handleSubjectAdded} />
+              </TabContentWithAnimation>
 
-                <TabsContent value="subjects" className="mt-0">
-                  <motion.div
-                    key="subjects"
-                    initial={{ opacity: 0, x: -100 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 100 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <SubjectsList subjects={subjects} loading={loading} onRefresh={fetchSubjects} />
-                  </motion.div>
-                </TabsContent>
+              <TabContentWithAnimation value="subjects">
+                <SubjectsList subjects={subjects} loading={loading} onRefresh={fetchSubjects} />
+              </TabContentWithAnimation>
 
-                <TabsContent value="chat" className="mt-0">
-                  <motion.div
-                    key="chat"
-                    initial={{ opacity: 0, x: -100 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 100 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <ChatInterface
-                      subjects={subjects}
-                      selectedSubject={selectedSubject}
-                      onSubjectChange={setSelectedSubject}
-                    />
-                  </motion.div>
-                </TabsContent>
-              </AnimatePresence>
+              <TabContentWithAnimation value="chat">
+                <ChatInterface
+                  subjects={subjects}
+                  selectedSubject={selectedSubject}
+                  onSubjectChange={setSelectedSubject}
+                />
+              </TabContentWithAnimation>
             </div>
           </Tabs>
         </motion.div>
